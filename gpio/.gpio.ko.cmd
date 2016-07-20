@@ -1,1 +1,0 @@
-cmd_/home/john/workspace/gpio/gpio/gpio.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/john/workspace/gpio/gpio/gpio.ko /home/john/workspace/gpio/gpio/gpio.o /home/john/workspace/gpio/gpio/gpio.mod.o
