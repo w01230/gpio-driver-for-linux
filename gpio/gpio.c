@@ -1,5 +1,5 @@
 ﻿/**
- * drviers/samsung_gpio/samsung_gpio.c
+ * drviers/gpio/gpio.c
  *
  * History:
  *   2011/6/29  - [W.J] created file
@@ -31,14 +31,15 @@
 #include <linux/delay.h>
 #include <linux/ioctl.h>
 #include <linux/sched.h>
+#include <linux/slab.h>
 #include <linux/proc_fs.h>
-#include <asm/gpio.h>
+#include <linux/gpio.h>
 #include <asm/irq.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <linux/poll.h>
 
-#include "samsung_gpio.h"
+#include "gpio.h"
 
 struct gpio_dev {
 	struct cdev cdev;
@@ -115,7 +116,7 @@ static struct file_operations gpio_fops = {
 static void gpio_setup(struct gpio_dev *dev,int index)
 {
 	int err = 0;
-	int devno = MKDEV(SAMSUNG_GPIO_MAJOR, index);
+	int devno = MKDEV(GPIO_MAJOR, index);
 	
 	cdev_init(&dev->cdev, &gpio_fops);
 	dev->cdev.owner = THIS_MODULE;
@@ -133,7 +134,7 @@ static int __init gpio_init(void)
 {
 	int ret;
 	unsigned int gpio_major;
-	dev_t devno = MKDEV(SAMSUNG_GPIO_MAJOR, 0);													//申请次设备号
+	dev_t devno = MKDEV(GPIO_MAJOR, 0);													//申请次设备号
 	
 	printk("init gpio driver module...\n");
 		
@@ -161,7 +162,7 @@ static int __init gpio_init(void)
 		return -1;
 	}
 	
-	device_create(gpio_class, NULL, MKDEV(SAMSUNG_GPIO_MAJOR, 0), 
+	device_create(gpio_class, NULL, MKDEV(GPIO_MAJOR, 0), 
 					NULL, DEVICE_NAME "%d", 0);													//创建设备节点
 
 	return ret;
@@ -172,8 +173,8 @@ static void __exit gpio_exit(void)
 {
 	cdev_del(&devp->cdev);
 	kfree(devp);
-	unregister_chrdev_region(MKDEV(SAMSUNG_GPIO_MAJOR, 0), 1);
-	device_destroy(gpio_class,MKDEV(SAMSUNG_GPIO_MAJOR, 0));
+	unregister_chrdev_region(MKDEV(GPIO_MAJOR, 0), 1);
+	device_destroy(gpio_class,MKDEV(GPIO_MAJOR, 0));
 	class_destroy(gpio_class);
 }
 
