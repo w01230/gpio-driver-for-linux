@@ -14,7 +14,7 @@ all:
 	@$(MAKE) -C $(KDIR) M=$(PWD) modules
 
 clean:
-	@rm -rf *.o *.ko *.mod.c *.order *.symvers
+	@rm -rf *.d *.o *.ko *.mod.c *.order *.symvers
 
 endif
 
