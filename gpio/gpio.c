@@ -8,8 +8,9 @@
  *   2011/10/12 - [W.J] add SIGNAL notice
  *   2011/11/05 - [W.J] add POLL,remove SIGNAL notice 
  *   2012/7/16  - [W.J] move irq request to device open.
- *   2014/6/11  - [W.J] remov interrrupt poll.
- * Copyright (C) 2009-2014, WJ@SHANGHAI, Inc.
+ *   2014/6/11  - [W.J] remove interrrupt poll.
+ *   2016/7/20  - [W.J] change header file including
+ * Copyright (C) 2009-201666666, WJ@SHANGHAI, Inc.
  *
  * GPIO driver
  *
@@ -134,12 +135,12 @@ static int __init gpio_init(void)
 {
 	int ret;
 	unsigned int gpio_major;
-	dev_t devno = MKDEV(GPIO_MAJOR, 0);													//申请次设备号
+	dev_t devno = MKDEV(GPIO_MAJOR, 0);			//申请次设备号
 	
 	printk("init gpio driver module...\n");
 		
 	if (devno) {
-		ret = register_chrdev_region(devno, 1, DEVICE_NAME);									//申请设备注册 
+		ret = register_chrdev_region(devno, 1, DEVICE_NAME);		//申请设备注册 
 	} else {
 		ret = alloc_chrdev_region(&devno, 0, 1, DEVICE_NAME); 
 		gpio_major = MAJOR(devno); 
@@ -152,7 +153,7 @@ static int __init gpio_init(void)
 		return ret;
 	}
 			
-	devp = kmalloc(sizeof(struct gpio_dev), GFP_KERNEL);										//申请内存
+	devp = kmalloc(sizeof(struct gpio_dev), GFP_KERNEL);		//申请内存
 	memset(devp, 0, sizeof(struct gpio_dev));
 	gpio_setup(devp, 0);
 	
@@ -163,7 +164,7 @@ static int __init gpio_init(void)
 	}
 	
 	device_create(gpio_class, NULL, MKDEV(GPIO_MAJOR, 0), 
-					NULL, DEVICE_NAME "%d", 0);													//创建设备节点
+					NULL, DEVICE_NAME "%d", 0);			//创建设备节点
 
 	return ret;
 }
