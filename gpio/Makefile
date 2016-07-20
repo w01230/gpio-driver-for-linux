@@ -5,7 +5,7 @@
 #
 
 ifneq ($(KERNELRELEASE),)
-	obj-m:=samsung_gpio.o
+	obj-m:=gpio.o
 else
 	PWD:=$(shell pwd)
 	KVER:=$(shell uname -r)
