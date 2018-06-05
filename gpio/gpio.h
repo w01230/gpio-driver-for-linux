@@ -10,8 +10,8 @@
 #ifndef _GPIO_H
 #define _GPIO_H
 
-#define DEVICE_NAME			"gpio"
-#define GPIO_MAJOR		 	200
+#define DEVICE_NAME			"gpiodrv"
+#define GPIO_MAJOR			0
 #define IOCTL_MAGIC			'g'
 #define GPIO_OUT_LOW		_IOW(IOCTL_MAGIC, 0x00, unsigned long)
 #define GPIO_OUT_HIG		_IOW(IOCTL_MAGIC, 0x01, unsigned long)

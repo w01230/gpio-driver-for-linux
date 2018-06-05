@@ -10,7 +10,8 @@
  *   2012/7/16  - [W.J] move irq request to device open.
  *   2014/6/11  - [W.J] remove interrrupt poll.
  *   2016/7/20  - [W.J] change header file including
- * Copyright (C) 2009-201666666, WJ@SHANGHAI, Inc.
+ *   2018/6/05  - [W.J] fix bug about alloc_chrdev_region
+ * Copyright (C) 2009-2018, WJ@SHANGHAI, Inc.
  *
  * GPIO driver
  *
@@ -42,18 +43,16 @@
 
 #include "gpio.h"
 
-struct gpio_dev {
-	struct cdev cdev;
-};
-
-struct gpio_dev *devp;
+static struct cdev cdev;
+static struct class *gpio_class;
+static dev_t devno;
 
 /*OPEN*/
 static int gpio_open(struct inode *inode, struct file *filp)
-{	
+{
 	int ret = 0;
 	
-	filp->private_data = devp; 
+	filp->private_data = &cdev; 
 	
 	return ret;
 }
@@ -66,7 +65,7 @@ static int gpio_release(struct inode *inode, struct file *filp)
 
 /*READ*/
 static ssize_t gpio_read(struct file *filp, char __user *buff, 
-							size_t count, loff_t *offp)
+				size_t count, loff_t *offp)
 {
 	return 0;
 }
@@ -114,57 +113,53 @@ static struct file_operations gpio_fops = {
 }; 
 
 /*DEV SETUP*/
-static void gpio_setup(struct gpio_dev *dev,int index)
+static void gpio_setup(struct cdev *cdevp, dev_t dev)
 {
-	int err = 0;
-	int devno = MKDEV(GPIO_MAJOR, index);
-	
-	cdev_init(&dev->cdev, &gpio_fops);
-	dev->cdev.owner = THIS_MODULE;
-	dev->cdev.ops = &gpio_fops;
-	err = cdev_add(&dev->cdev, devno, 1);
-	if (err)
-		printk("add gpio setup failed!\n"); 
+	int ret = 0;
+
+	cdev_init(cdevp, &gpio_fops);
+	cdevp->owner = THIS_MODULE;
+	cdevp->ops = &gpio_fops;
+	ret = cdev_add(cdevp, dev, 1);
+	if (ret)
+		printk(KERN_ALERT"add gpio setup failed!\n"); 
 }
 
 
 /*DEV INIT*/
-struct class *gpio_class;
-
 static int __init gpio_init(void)
 {
+	struct device *dev;
 	int ret;
 	unsigned int gpio_major;
-	dev_t devno = MKDEV(GPIO_MAJOR, 0);			//申请次设备号
 	
 	printk("init gpio driver module...\n");
-		
-	if (devno) {
-		ret = register_chrdev_region(devno, 1, DEVICE_NAME);		//申请设备注册 
-	} else {
+	
+	devno = MKDEV(GPIO_MAJOR, 0);
+	gpio_major = MAJOR(devno); 
+	if (gpio_major)
+		ret = register_chrdev_region(devno, 1, DEVICE_NAME); 
+	else
 		ret = alloc_chrdev_region(&devno, 0, 1, DEVICE_NAME); 
-		gpio_major = MAJOR(devno); 
-		printk(KERN_INFO "Todo: mknod /dev/%s c %d 0\n", DEVICE_NAME, 
-				gpio_major);
-	}
 	
 	if (ret < 0) {
-		printk("err: failed in registering dev.\n");
+		printk(KERN_ALERT"failed in registering dev.\n");
 		return ret;
 	}
-			
-	devp = kmalloc(sizeof(struct gpio_dev), GFP_KERNEL);		//申请内存
-	memset(devp, 0, sizeof(struct gpio_dev));
-	gpio_setup(devp, 0);
+	
+	gpio_setup(&cdev, devno);
 	
 	gpio_class = class_create(THIS_MODULE, DEVICE_NAME);
 	if (IS_ERR(gpio_class)) {
-		printk("err: failed in creating class.\n");
+		printk(KERN_ALERT"failed in creating class.\n");
 		return -1;
 	}
 	
-	device_create(gpio_class, NULL, MKDEV(GPIO_MAJOR, 0), 
-					NULL, DEVICE_NAME "%d", 0);			//创建设备节点
+	dev = device_create(gpio_class, NULL, devno, NULL, DEVICE_NAME "%d", 0);
+	if (IS_ERR(dev)) {
+		printk(KERN_ALERT"failed in creating class.\n");
+		return -1;
+	}
 
 	return ret;
 }
@@ -172,10 +167,9 @@ static int __init gpio_init(void)
 /*DEV EXIT*/
 static void __exit gpio_exit(void)
 {
-	cdev_del(&devp->cdev);
-	kfree(devp);
-	unregister_chrdev_region(MKDEV(GPIO_MAJOR, 0), 1);
-	device_destroy(gpio_class,MKDEV(GPIO_MAJOR, 0));
+	cdev_del(&cdev);
+	unregister_chrdev_region(devno, 1);
+	device_destroy(gpio_class, devno);
 	class_destroy(gpio_class);
 }
 
