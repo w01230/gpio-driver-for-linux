@@ -113,7 +113,7 @@ static struct file_operations gpio_fops = {
 }; 
 
 /*DEV SETUP*/
-static void gpio_setup(struct cdev *cdevp, dev_t dev)
+static int gpio_setup(struct cdev *cdevp, dev_t dev)
 {
 	int ret = 0;
 
@@ -123,6 +123,8 @@ static void gpio_setup(struct cdev *cdevp, dev_t dev)
 	ret = cdev_add(cdevp, dev, 1);
 	if (ret)
 		printk(KERN_ALERT"add gpio setup failed!\n"); 
+	
+	return ret;
 }
 
 
@@ -147,8 +149,12 @@ static int __init gpio_init(void)
 		return ret;
 	}
 	
-	gpio_setup(&cdev, devno);
-	
+	ret = gpio_setup(&cdev, devno);
+	if (ret < 0) {
+		printk(KERN_ALERT"failed in setup dev.\n");
+		return ret;
+	}
+
 	gpio_class = class_create(THIS_MODULE, DEVICE_NAME);
 	if (IS_ERR(gpio_class)) {
 		printk(KERN_ALERT"failed in creating class.\n");
